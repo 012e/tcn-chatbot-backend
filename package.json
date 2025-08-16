@@ -1,0 +1,36 @@
+{
+  "name": "tcn-chatbot-new",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "play": "tsx cmds/playground.ts",
+    "deploy": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "2.0.10",
+    "@clerk/backend": "^2.7.1",
+    "@hono/clerk-auth": "^3.0.3",
+    "@langchain/core": "^0.3.68",
+    "@langchain/textsplitters": "^0.1.0",
+    "@libsql/client": "^0.15.10",
+    "@tursodatabase/serverless": "^0.1.2",
+    "ai": "5.0.10",
+    "dedent": "^1.6.0",
+    "dompurify": "^3.2.6",
+    "hono": "^4.9.0",
+    "isomorphic-dompurify": "^2.26.0",
+    "jsdom": "^26.1.0",
+    "langchain": "^0.3.30",
+    "libsql-stateless-easy": "^1.8.0",
+    "sanitize-html": "^2.17.0",
+    "zod": "^4.0.15"
+  },
+  "devDependencies": {
+    "@types/node": "^24.2.1",
+    "@types/sanitize-html": "^2.16.0",
+    "dotenv": "^17.2.1",
+    "tsx": "^4.20.3",
+    "wrangler": "^4.29.1"
+  }
+}
