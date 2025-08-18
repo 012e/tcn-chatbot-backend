@@ -8,5 +8,4 @@ RUN deno cache main.ts
 FROM denoland/deno:latest
 WORKDIR /app
 COPY --from=builder /app .
-EXPOSE 8000
 ENTRYPOINT ["deno", "task", "start"]

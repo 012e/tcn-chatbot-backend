@@ -2,6 +2,7 @@ import { z } from "zod";
 
 const configSchema = z
   .object({
+    port: z.coerce.number().default(3000),
     isDevelopment: z.boolean().default(false),
     openaiKey: z.string().nonempty(),
     embeddingModel: z.string().default("text-embedding-3-small"),
@@ -33,6 +34,7 @@ function parseConfigFromEnv(): Config {
   const isDevelopment = Deno.env.get("NODE_ENV") !== "production";
 
   return configSchema.parse({
+    port: Deno.env.get("PORT"),
     openaiKey: Deno.env.get("OPENAI_API_KEY"),
     isDevelopment,
     embeddingModel: Deno.env.get("OPENAI_EMBEDDING_MODEL"),

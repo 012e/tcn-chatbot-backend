@@ -211,4 +211,7 @@ app.delete("/internal/document/:id", async (c) => {
   }
 });
 
-Deno.serve(app.fetch);
+Deno.serve({
+  port: config.port,
+  handler: app.fetch,
+});
