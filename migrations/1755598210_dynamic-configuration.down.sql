@@ -1,3 +1,2 @@
-drop table if exists configuration;
-
+drop table if exists configurations;
 

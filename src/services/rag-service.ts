@@ -5,11 +5,8 @@ import {
   DocumentRepository,
   DocumentChunk,
 } from "./document-repository.ts";
-import { embed } from "ai";
-import { openai } from "@ai-sdk/openai";
 import z from "zod";
 import sanitizeHtml from "sanitize-html";
-import { getConfig } from "@/config.ts";
 import { env } from "cloudflare:workers";
 
 export type InsertDocumentCommand = z.infer<typeof InsertDocumentSchema>;
@@ -22,18 +19,52 @@ export class RagService {
   constructor(
     private readonly _documentRepository: DocumentRepository,
     private readonly _chunker: Chunker,
-    private readonly _embedModel: string = getConfig().embeddingModel,
   ) {}
+
+  async rerank(
+    chunks: DocumentChunk[],
+    query: string,
+    limit: number = 5,
+  ): Promise<DocumentChunk[]> {
+    const contexts = chunks.map((chunk) => {
+      return { text: chunk.chunk };
+    });
+    const response: Ai_Cf_Baai_Bge_Reranker_Base_Output = await env.AI.run(
+      "@cf/baai/bge-reranker-base",
+      {
+        top_k: 5,
+        query,
+        contexts,
+      },
+    );
+    const selectedIndexes = response.response?.map((i) => i.id) || [];
+
+    return chunks.filter((_, index) => selectedIndexes.includes(index));
+  }
 
   async getRelevantChunks(query: string): Promise<DocumentChunk[]> {
     const embeddedQuery = await this.embed(query);
 
     const chunks = await this._documentRepository.getReleventChunks(
       embeddedQuery,
-      5,
+      20,
     );
 
-    return chunks;
+    return this.rerank(chunks, query, 5);
+  }
+  private async embedMulti(queries: string[]): Promise<number[][]> {
+    try {
+      const embeddings: Ai_Cf_Baai_Bge_M3_Output = await env.AI.run(
+        "@cf/baai/bge-m3",
+        {
+          text: queries,
+        },
+      );
+      return (embeddings as any).data as number[][];
+    } catch (error) {
+      console.error("Error during embedding:", error);
+      throw new Error("Failed to embed queries");
+    }
   }
 
   private async embed(query: string): Promise<number[]> {
@@ -44,7 +75,7 @@ export class RagService {
           text: query,
         },
       );
-      return embeddings;
+      return (embeddings as any).data[0] as number[];
     } catch (error) {
       console.error("Error during embedding:", error);
       throw new Error("Failed to embed query");
@@ -54,10 +85,9 @@ export class RagService {
   private async _embedChunks(
     chunks: string[],
   ): Promise<DocumentChunkCreateDto[]> {
-    const jobs = chunks.map((chunk) => this.embed(chunk));
     try {
-      const result = await Promise.all(jobs);
-      return result.map((embedding, index) => ({
+      const embeddings = await this.embedMulti(chunks);
+      return embeddings.map((embedding, index) => ({
         chunk: chunks[index],
         embedding: embedding as number[],
       }));

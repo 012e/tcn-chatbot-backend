@@ -10,7 +10,7 @@ create table document_chunks (
     document_id integer not null references documents(id) on delete cascade,
     chunk text not null,
     metadata text,
-    embedding f32_blob(1536) not null
+    embedding f32_blob(1024) not null
 );
 
 create index idx_document_chunks_document_id on document_chunks (document_id);
