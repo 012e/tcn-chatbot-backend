@@ -8,6 +8,7 @@
     "cf-typegen": "wrangler types --env-interface CloudflareBindings"
   },
   "dependencies": {
+    "@ai-sdk/groq": "^2.0.11",
     "@ai-sdk/openai": "2.0.10",
     "@clerk/backend": "^2.7.1",
     "@hono/clerk-auth": "^3.0.3",

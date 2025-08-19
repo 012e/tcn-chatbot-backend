@@ -1,4 +1,4 @@
-import { openai } from "@ai-sdk/openai";
+import { groq } from "@ai-sdk/groq";
 import dedent from "dedent";
 import {
   convertToModelMessages,
@@ -19,7 +19,7 @@ export class ChatBot {
 
   async chat(messages: UIMessage[]): Promise<Response> {
     const result = streamText({
-      model: openai(this._config.chatModel),
+      model: groq("meta-llama/llama-4-scout-17b-16e-instruct"),
       system: dedent`
         <system_prompt>
           <role>
