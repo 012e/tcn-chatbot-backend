@@ -32,22 +32,39 @@ const createRagService = () => {
 
 app.post("/public/chat", async (c) => {
   try {
-    const body = await c.req.json();
-    if (!body["messages"] || !Array.isArray(body["messages"])) {
+    const { messages } = await c.req.json();
+
+    // Validate the input to ensure 'messages' is a non-empty array
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return c.json(
         {
-          message: "messages must be an array",
+          message: "The 'messages' field must be a non-empty array.",
         },
         400,
       );
     }
+
+    // Initialize the chatbot with dependency injection
     const chatbot = new ChatBot(getConfig(), createRagService());
-    return await chatbot.chat(body["messages"]);
-  } catch (e) {
-    console.error("Error processing chat request:", e);
+
+    // Use a try-catch block for the chat method in case of processing errors
+    try {
+      return await chatbot.chat(messages);
+    } catch (chatError) {
+      console.error("Chatbot processing error:", chatError);
+      return c.json(
+        {
+          message: "An error occurred while processing the chat request.",
+        },
+        500,
+      );
+    }
+  } catch (jsonError) {
+    // Handle JSON parsing errors gracefully
+    console.error("Error parsing request JSON:", jsonError);
     return c.json(
       {
-        message: "invalid json",
+        message: "Invalid JSON payload.",
       },
       400,
     );

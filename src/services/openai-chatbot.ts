@@ -1,33 +1,16 @@
 import { openai } from "@ai-sdk/openai";
 import dedent from "dedent";
 
-import { streamText, TextPart, UIMessage } from "ai";
+import {
+  convertToModelMessages,
+  stepCountIs,
+  streamText,
+  tool,
+  UIMessage,
+} from "ai";
 import { Config } from "../config.ts";
-import { InvalidInputFormatException } from "../exceptions/invalid-input-format.ts";
 import { RagService } from "./rag-service.ts";
-
-function isTextOnlyMessage(message: UIMessage): boolean {
-  return message.parts.every(
-    (part) => part.type === "text" || part.type === "step-start",
-  );
-}
-
-function isTextOnlyMessages(messages: UIMessage[]): boolean {
-  return messages.every(isTextOnlyMessage);
-}
-
-function toText(messages: UIMessage[]): string {
-  let res = "";
-  for (const message of messages) {
-    const part = message.parts
-      .filter((part) => part.type === "text") // step-start parts are not text
-      .map((part) => part as TextPart)
-      .map((part) => part.text.trim())
-      .join("\n");
-    res += part;
-  }
-  return res;
-}
+import z from "zod";
 
 export class ChatBot {
   constructor(
@@ -36,15 +19,6 @@ export class ChatBot {
   ) {}
 
   async chat(messages: UIMessage[]): Promise<Response> {
-    if (!isTextOnlyMessages(messages)) {
-      throw new InvalidInputFormatException(
-        "Only text messages are supported.",
-      );
-    }
-    const query = toText(messages);
-    const chunks = await this._ragService.getRelevantChunks(query);
-    const context = chunks.map((i) => i.chunk).join("\n");
-
     const result = streamText({
       model: openai(this._config.chatModel),
       system: dedent`
@@ -74,7 +48,6 @@ export class ChatBot {
             - Luôn tìm kiếm thông tin từ tài liệu đáng tin cậy trước khi trả lời.
             - Trả lời rõ ràng, ngắn gọn, dễ hiểu cho người dùng là học sinh hoặc cán bộ trường.
             - Chỉ trả lời những gì có trong tài liệu. Không suy đoán.
-            - Nếu không tìm được thông tin, hãy nói rõ và hướng dẫn liên hệ Phòng đào tạo. Điện thoại: 0983498091 (Cô Nguyễn Thị Thúy) hoặc email <tcnghe_dtntag@angiang.edu.vn>.
           </instruction>
 
           <style>
@@ -92,26 +65,25 @@ export class ChatBot {
           <fallback>
             - Nếu không tìm được thông tin, hãy nói rõ và hướng dẫn liên hệ Phòng đào tạo. Điện thoại: 0983498091 (Cô Nguyễn Thị Thúy) hoặc email <tcnghe_dtntag@angiang.edu.vn>.
           </fallback>
-
-          <context_data>
-            ${context}
-          </context_data>
         </system_prompt>
         `,
-      prompt: query,
-    });
-
-    return result.toUIMessageStreamResponse({
-      originalMessages: messages,
-      messageMetadata: ({ part }) => {
-        if (part.type === "start") {
-          return {
-            referencedChunks: chunks.map((chunk) => {
-              return { id: chunk.id };
-            }),
-          };
-        }
+      stopWhen: stepCountIs(5),
+      messages: convertToModelMessages(messages),
+      tools: {
+        getInformation: tool({
+          name: "rag",
+          description: `Lấy thông tin từ cơ sở tri thức của bạn để trả lời các câu hỏi.`,
+          inputSchema: z.object({
+            question: z
+              .string()
+              .describe("Câu hỏi của người dùng để lấy thông tin."),
+          }),
+          execute: async ({ question }) =>
+            await this._ragService.getRelevantChunks(question),
+        }),
       },
     });
+
+    return result.toUIMessageStreamResponse();
   }
 }
