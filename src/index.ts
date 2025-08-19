@@ -170,7 +170,7 @@ app.put("/internal/document/:id", async (c) => {
   let jsonBody = null;
   try {
     jsonBody = await c.req.json();
-  } catch (e) {
+  } catch (_e) {
     return c.json(
       {
         message: "invalid json",
@@ -228,7 +228,4 @@ app.delete("/internal/document/:id", async (c) => {
   }
 });
 
-Deno.serve({
-  port: config.port,
-  handler: app.fetch,
-});
+export default app;

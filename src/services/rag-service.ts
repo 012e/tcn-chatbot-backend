@@ -10,6 +10,7 @@ import { openai } from "@ai-sdk/openai";
 import z from "zod";
 import sanitizeHtml from "sanitize-html";
 import { getConfig } from "@/config.ts";
+import { env } from "cloudflare:workers";
 
 export type InsertDocumentCommand = z.infer<typeof InsertDocumentSchema>;
 
@@ -37,16 +38,13 @@ export class RagService {
 
   private async embed(query: string): Promise<number[]> {
     try {
-      const { embedding } = await embed({
-        model: openai.textEmbeddingModel(this._embedModel),
-        value: query,
-        providerOptions: {
-          openai: {
-            dimensions: 1536,
-          },
+      const embeddings: Ai_Cf_Baai_Bge_M3_Output = await env.AI.run(
+        "@cf/baai/bge-m3",
+        {
+          text: query,
         },
-      });
-      return embedding as number[];
+      );
+      return embeddings;
     } catch (error) {
       console.error("Error during embedding:", error);
       throw new Error("Failed to embed query");

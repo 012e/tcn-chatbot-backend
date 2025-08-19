@@ -1,12 +1,13 @@
-import { ModelMessage } from "ai";
+import { ModelMessage } from "npm:ai";
 import * as readline from "node:readline/promises";
-import { ChatBot } from "@/services/openai-chatbot";
-import { getConfig } from "@/config";
-import { TursoDocumentRepository } from "@/services/turso-document-repository";
-import { RagService } from "@/services/rag-service";
-import { RecursiveChunker } from "@/services/recursive-chunker";
+import { ChatBot } from "@/services/openai-chatbot.ts";
+import { getConfig } from "@/config.ts";
+import { TursoDocumentRepository } from "@/services/turso-document-repository.ts";
+import { RagService } from "@/services/rag-service.ts";
+import { RecursiveChunker } from "@/services/recursive-chunker.ts";
+import process from "node:process";
 
-import { db } from "@/db";
+import { db } from "@/db/index.ts";
 
 const terminal = readline.createInterface({
   input: process.stdin,

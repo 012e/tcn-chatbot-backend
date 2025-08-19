@@ -1,4 +1,4 @@
-import type { PageResult } from "@/helpers/types";
+import type { PageResult } from "@/helpers/types.ts";
 
 export type DocumentCreateDto = {
   content: string;
