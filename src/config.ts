@@ -5,7 +5,7 @@ const configSchema = z
     port: z.coerce.number().default(3000),
     isDevelopment: z.boolean().default(false),
     openaiKey: z.string().nonempty(),
-    embeddingModel: z.string().default("text-embedding-3-small"),
+    embeddingModel: z.string().default("text-embedding-3-large"),
     chatModel: z.string().default("gpt-4o-mini"),
     tursoDatabaseUrl: z.url().optional(),
     tursoAuthToken: z.string().nonempty().optional(),

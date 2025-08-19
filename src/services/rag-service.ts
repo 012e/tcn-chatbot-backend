@@ -9,6 +9,7 @@ import { embed } from "ai";
 import { openai } from "@ai-sdk/openai";
 import z from "zod";
 import sanitizeHtml from "sanitize-html";
+import { getConfig } from "@/config.ts";
 
 export type InsertDocumentCommand = z.infer<typeof InsertDocumentSchema>;
 
@@ -20,10 +21,11 @@ export class RagService {
   constructor(
     private readonly _documentRepository: DocumentRepository,
     private readonly _chunker: Chunker,
+    private readonly _embedModel: string = getConfig().embeddingModel,
   ) {}
 
   async getRelevantChunks(query: string): Promise<DocumentChunk[]> {
-    const embeddedQuery = await this.embedQuery(query);
+    const embeddedQuery = await this.embed(query);
 
     const chunks = await this._documentRepository.getReleventChunks(
       embeddedQuery,
@@ -33,11 +35,16 @@ export class RagService {
     return chunks;
   }
 
-  private async embedQuery(query: string): Promise<number[]> {
+  private async embed(query: string): Promise<number[]> {
     try {
       const { embedding } = await embed({
-        model: openai.textEmbeddingModel("text-embedding-3-small"),
+        model: openai.textEmbeddingModel(this._embedModel),
         value: query,
+        providerOptions: {
+          openai: {
+            dimensions: 1536,
+          },
+        },
       });
       return embedding as number[];
     } catch (error) {
@@ -49,15 +56,10 @@ export class RagService {
   private async _embedChunks(
     chunks: string[],
   ): Promise<DocumentChunkCreateDto[]> {
-    const jobs = chunks.map((chunk) =>
-      embed({
-        model: openai.textEmbeddingModel("text-embedding-3-small"),
-        value: chunk,
-      }),
-    );
+    const jobs = chunks.map((chunk) => this.embed(chunk));
     try {
       const result = await Promise.all(jobs);
-      return result.map(({ embedding }, index) => ({
+      return result.map((embedding, index) => ({
         chunk: chunks[index],
         embedding: embedding as number[],
       }));
@@ -68,7 +70,6 @@ export class RagService {
   }
 
   async insertDocument(document: InsertDocumentCommand): Promise<void> {
-    console.log("fuckkkkkkkkkkkkkkkkkkkkkkkkkkk");
     document.content = sanitizeHtml(document.content, {
       allowedAttributes: {
         a: ["href", "title"],
