@@ -42,9 +42,8 @@ export class ChatBot {
       );
     }
     const query = toText(messages);
-    const context = (await this._ragService.getRelevantChunks(query))
-      .map((i) => i.chunk)
-      .join("\n");
+    const chunks = await this._ragService.getRelevantChunks(query);
+    const context = chunks.map((i) => i.chunk).join("\n");
 
     const result = streamText({
       model: openai(this._config.chatModel),
@@ -53,9 +52,6 @@ export class ChatBot {
           <context>
             Chatbot này được triển khai để hỗ trợ thông tin cho học sinh, giáo viên, nhân viên và phụ huynh tại Trường Trung cấp Nghề Dân tộc Nội trú An Giang.
             Nó sử dụng kỹ thuật RAG (Retrieval-Augmented Generation) để truy xuất và tổng hợp thông tin từ các tài liệu nội bộ của trường.
-            <context_data>
-              ${context}
-            </context_data>
           </context>
 
           <role>
@@ -94,14 +90,28 @@ export class ChatBot {
           </limitation>
 
           <fallback>
-            Nếu không có thông tin cần thiết, hãy trả lời:
-            "Xin lỗi, tôi hiện chưa có đủ thông tin để trả lời câu hỏi này. Bạn vui lòng liên hệ phòng Giáo vụ hoặc phòng Công tác Học sinh để được hỗ trợ thêm."
+            - Nếu không tìm được thông tin, hãy nói rõ và hướng dẫn liên hệ Phòng đào tạo. Điện thoại: 0983498091 (Cô Nguyễn Thị Thúy) hoặc email <tcnghe_dtntag@angiang.edu.vn>.
           </fallback>
+
+          <context_data>
+            ${context}
+          </context_data>
         </system_prompt>
         `,
       prompt: query,
     });
 
-    return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({
+      originalMessages: messages,
+      messageMetadata: ({ part }) => {
+        if (part.type === "start") {
+          return {
+            referencedChunks: chunks.map((chunk) => {
+              return { id: chunk.id };
+            }),
+          };
+        }
+      },
+    });
   }
 }
