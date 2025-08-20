@@ -15,6 +15,7 @@
     "@langchain/core": "^0.3.68",
     "@langchain/textsplitters": "^0.1.0",
     "@libsql/client": "^0.15.10",
+    "@openrouter/ai-sdk-provider": "^1.1.2",
     "@tursodatabase/serverless": "^0.1.2",
     "ai": "5.0.10",
     "dedent": "^1.6.0",

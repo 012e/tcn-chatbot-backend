@@ -1,4 +1,3 @@
-import { groq } from "@ai-sdk/groq";
 import dedent from "dedent";
 import {
   convertToModelMessages,
@@ -10,6 +9,11 @@ import {
 import { Config } from "../config.ts";
 import { RagService } from "./rag-service.ts";
 import z from "zod";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_TOKEN,
+});
 
 export class ChatBot {
   constructor(
@@ -19,7 +23,7 @@ export class ChatBot {
 
   async chat(messages: UIMessage[]): Promise<Response> {
     const result = streamText({
-      model: groq("meta-llama/llama-4-scout-17b-16e-instruct"),
+      model: openrouter("google/gemini-2.0-flash-001"),
       system: dedent`
         <system_prompt>
           <role>
