@@ -71,6 +71,15 @@ export class ChatBot {
         `,
       stopWhen: stepCountIs(5),
       messages: convertToModelMessages(messages),
+      onFinish: ({ text, finishReason, response, steps, totalUsage }) => {
+        console.log("Response finished:", {
+          text,
+          finishReason,
+          response,
+          steps,
+          totalUsage,
+        });
+      },
       tools: {
         getInformation: tool({
           name: "rag",
